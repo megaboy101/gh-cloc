@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>gh·cloc — count lines of code in any GitHub repo</title>
+  <meta name="description" content="Count lines of code in any public GitHub repository, right in your browser. Exclude tests, fixtures, docs and more.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#09090b">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="modulepreload" href="/js/app.js">
+  <script type="module" src="/js/app.js"></script>
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" hidden>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+    <symbol id="i-branch" viewBox="0 0 24 24"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></symbol>
+    <symbol id="i-commit" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><line x1="3" x2="9" y1="12" y2="12"/><line x1="15" x2="21" y1="12" y2="12"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+    <symbol id="i-loader" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  </svg>
+
+  <header class="topbar">
+    <a href="/" class="brand" aria-label="gh·cloc home">
+      <span class="brand-mark"><svg class="icon"><use href="#i-code"/></svg></span>
+      <span>gh<span class="brand-dot">·</span>cloc</span>
+    </a>
+  </header>
+
+  <main class="page">
+    <section class="intro" id="intro">
+      <h1>Count the code in any GitHub repo</h1>
+      <p>Paste a link or search. Files are counted right in your browser, and you can exclude tests, fixtures, docs, and anything else.</p>
+    </section>
+
+    <form id="search-form" class="search" role="search" autocomplete="off" novalidate>
+      <div class="combobox">
+        <svg class="icon combobox-icon" aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="q" name="q" type="text" inputmode="url" role="combobox"
+          aria-label="GitHub repository" aria-expanded="false" aria-controls="suggestions" aria-autocomplete="list"
+          placeholder="owner/repo, URL, or search…" enterkeyhint="go"
+          autocapitalize="off" autocorrect="off" spellcheck="false">
+        <kbd class="combobox-kbd" aria-hidden="true">/</kbd>
+      </div>
+      <button class="btn btn-primary" type="submit">Count</button>
+      <ul id="suggestions" class="suggestions" role="listbox" aria-label="Repositories" hidden></ul>
+    </form>
+
+    <div id="examples" class="examples">
+      <span>Try</span>
+      <button type="button" class="chip" data-repo="sveltejs/svelte">sveltejs/svelte</button>
+      <button type="button" class="chip" data-repo="BurntSushi/ripgrep">BurntSushi/ripgrep</button>
+      <button type="button" class="chip" data-repo="psf/requests">psf/requests</button>
+    </div>
+
+    <section id="status" class="card status" hidden aria-live="polite">
+      <svg class="icon spin" aria-hidden="true"><use href="#i-loader"/></svg>
+      <div class="status-text">
+        <strong id="status-title">Downloading…</strong>
+        <span id="status-detail" class="muted"></span>
+      </div>
+      <button id="cancel" type="button" class="btn btn-ghost btn-sm">Cancel</button>
+    </section>
+
+    <div id="error" class="alert" role="alert" hidden></div>
+
+    <div id="results" class="results" hidden>
+      <section class="card repo-card" id="repo-card"></section>
+
+      <section class="stats" id="stats" aria-label="Totals"></section>
+
+      <section class="card langs" aria-labelledby="langs-title">
+        <header class="card-header">
+          <h2 id="langs-title">Languages</h2>
+          <span class="muted small">Tap to exclude</span>
+        </header>
+        <div class="segbar" id="segbar" role="img"></div>
+        <p class="segbar-readout small" id="segbar-readout" aria-hidden="true"></p>
+        <div class="table-wrap">
+          <table class="lang-table" id="lang-table"></table>
+        </div>
+      </section>
+
+      <section class="card filters" aria-labelledby="filters-title">
+        <header class="card-header">
+          <h2 id="filters-title">Exclude</h2>
+        </header>
+        <div class="presets" id="presets" role="group" aria-label="Quick excludes"></div>
+
+        <form id="pattern-form" class="pattern-form">
+          <input id="pattern" type="text" class="input" placeholder="Pattern, e.g. *.snap or scripts/"
+            aria-label="Exclude pattern" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done">
+          <button type="submit" class="btn btn-outline" aria-label="Add pattern"><svg class="icon"><use href="#i-plus"/></svg></button>
+        </form>
+        <div class="patterns" id="patterns"></div>
+
+        <h3 class="subhead">Files</h3>
+        <div class="tree" id="tree" role="tree" aria-label="Repository files"></div>
+        <p class="muted small ignored-note" id="ignored-note"></p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Counts code, comment, and blank lines the way <a href="https://github.com/AlDanial/cloc">cloc</a> does. Binary and unrecognized files are skipped.</p>
+  </footer>
+</body>
+</html>
